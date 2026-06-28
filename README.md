@@ -64,8 +64,8 @@ uvicorn agent.main:app --reload --port 8000
 | `ZERNIO_API_KEY` | API de Zernio (dashboard → API Keys) |
 | `ZERNIO_WEBHOOK_SECRET` | Valida la firma del webhook (genera uno: `openssl rand -hex 32`) |
 | `REPORT_TOKEN` | Protege `/reports` y `/sale` |
-| `ENABLE_ADS` | `true` para activar anuncios + ROAS |
-| `META_ACCESS_TOKEN` | Solo si `ENABLE_ADS=true` (scope `ads_read`) |
+| `ENABLE_ADS` | `true` para activar anuncios + ROAS (usa la Ads API de Zernio) |
+| `META_ACCESS_TOKEN` | **Opcional**. Respaldo directo a Meta; vacío = solo Zernio |
 | `DATABASE_URL` | SQLite por defecto |
 
 ### `config/businesses.yaml` (un bloque por número — nunca se sube)
@@ -90,11 +90,13 @@ menos de 5 segundos (si no, reintenta y tras varios fallos desactiva el webhook)
 
 ## Anuncios de Meta + ROAS (opcional)
 
-Con `ENABLE_ADS=true`:
+Con `ENABLE_ADS=true` (**solo necesitas `ZERNIO_API_KEY`** — conecta tu cuenta de Meta Ads a
+Zernio en la sección *Ads* del dashboard; **no hace falta un token de Meta aparte**):
 1. Cada conversación que llega por un anuncio **Click-to-WhatsApp** guarda su origen
    (`ctwa_source_id`, titular, etc.) — Zernio lo entrega automáticamente.
-2. Se enriquece con el nombre de anuncio/campaña vía Meta Graph API (`META_ACCESS_TOKEN`).
-3. Se reporta `LeadSubmitted` a Meta; y `Purchase` cuando registras una venta:
+2. Se enriquece con el nombre de anuncio/campaña y el gasto vía la **Ads API de Zernio**
+   (`GET /v1/ads/{adId}`). Opcional: si defines `META_ACCESS_TOKEN`, se usa Meta Graph como respaldo.
+3. Se reporta `LeadSubmitted` a Meta (vía Zernio); y `Purchase` cuando registras una venta:
    ```bash
    curl -X POST https://<tu-dominio>/sale \
      -H "Authorization: Bearer $REPORT_TOKEN" \

@@ -69,7 +69,11 @@ Pregunta cuántos números/negocios va a conectar. Por CADA uno, una pregunta a 
 3. `account_id` de cada número — dashboard de Zernio → Connections/API (identifica cada negocio).
 4. Genera `ZERNIO_WEBHOOK_SECRET` y `REPORT_TOKEN` aleatorios (ej. `openssl rand -hex 32`).
 5. Pregunta: ¿quiere anuncios de Meta + ROAS? Si SÍ:
-   - `ENABLE_ADS=true`, `META_ACCESS_TOKEN` (scope `ads_read`), y `meta_ad_account_id` por negocio.
+   - `ENABLE_ADS=true`. NO necesita token de Meta: basta con que conecte su cuenta de
+     Meta Ads a Zernio (dashboard → Ads); el kit obtiene nombre de anuncio y gasto vía la
+     Ads API de Zernio con la misma `ZERNIO_API_KEY`.
+   - `META_ACCESS_TOKEN` es OPCIONAL (respaldo directo a Meta). `meta_ad_account_id` por
+     negocio solo se usa si activa ese respaldo.
    - Explica que esto permite ver de qué anuncio viene cada chat y medir retorno.
 
 ### FASE 4 — Generar `config/businesses.yaml`

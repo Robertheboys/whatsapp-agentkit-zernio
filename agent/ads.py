@@ -6,9 +6,11 @@ Hace 3 cosas, imitando en pequeño el patrón de simplemas-suite:
 1. CAPTURAR: guarda el origen del anuncio (ctwa_*) en cada conversación que viene de un
    anuncio de Meta. Zernio ya lo persiste en conversation.metadata; aquí lo copiamos a
    nuestra base para reportes y atribución.
-2. ENRIQUECER: con el ad_id (ctwa_source_id) consulta la Meta Graph API para añadir
-   nombre de anuncio / ad set / campaña.
-3. ROAS: ingresos (ventas registradas) ÷ gasto del anuncio (Meta Insights), por anuncio.
+2. ENRIQUECER: con el ad_id (ctwa_source_id) obtiene nombre de anuncio y gasto. Por
+   defecto usa la Ads API de Zernio (solo ZERNIO_API_KEY, si conectaste tu cuenta de
+   Meta Ads a Zernio). Si defines META_ACCESS_TOKEN, usa la Meta Graph API como respaldo.
+3. ROAS: ingresos (ventas registradas) ÷ gasto del anuncio, por anuncio. El gasto sale
+   de Zernio (o de Meta Insights como respaldo).
 
 Las conversiones de vuelta a Meta (LeadSubmitted/Purchase) se envían vía agent/zernio.py.
 """
@@ -23,7 +25,7 @@ from datetime import datetime, timedelta, timezone
 import httpx
 from dotenv import load_dotenv
 
-from agent import memory
+from agent import memory, zernio
 
 load_dotenv()
 
@@ -83,22 +85,29 @@ async def capturar_ad_source(conversation_id: str, metadata_ctwa: dict) -> dict 
     return ad_source
 
 
-# ── 2. Enriquecer con Meta Graph API ──────────────────────────
-async def enriquecer_ad_source(conversation_id: str) -> None:
-    """
-    Añade nombre de anuncio/ad set/campaña usando el ad_id. Requiere META_ACCESS_TOKEN.
-    Patrón equivalente a enrichAdSource() de simplemas-suite.
-    """
-    if not ENABLE_ADS or not META_ACCESS_TOKEN:
-        return
-    conv = await memory.obtener_conversacion(conversation_id)
-    ad_source = memory.leer_ad_source(conv)
-    if not ad_source or ad_source.get("enriched_at"):
-        return
-    ad_id = ad_source.get("ctwa_source_id")
-    if not ad_id:
-        return
+# ── 2. Enriquecer (Zernio por defecto; Meta como respaldo) ────
+async def _enriquecer_via_zernio(ad_source: dict, ad_id: str) -> bool:
+    """Rellena nombre/campaña/gasto desde la Ads API de Zernio. True si lo logró."""
+    data = await zernio.get_ad(ad_id)
+    if not data:
+        return False
+    ad = data.get("ad", data) if isinstance(data, dict) else {}
+    if not ad.get("name") and not ad.get("_id"):
+        return False
+    campaign = ad.get("campaign") or {}
+    metrics = ad.get("metrics") or {}
+    ad_source["ad_name"] = ad.get("name")
+    ad_source["ad_status"] = ad.get("status")
+    ad_source["campaign_name"] = campaign.get("name") or ad.get("campaignName")
+    ad_source["spend_snapshot"] = metrics.get("spend")
+    ad_source["enrich_source"] = "zernio"
+    return True
 
+
+async def _enriquecer_via_meta(ad_source: dict, ad_id: str) -> bool:
+    """Respaldo: Meta Graph API. Requiere META_ACCESS_TOKEN. True si lo logró."""
+    if not META_ACCESS_TOKEN:
+        return False
     url = f"{META_GRAPH_BASE}/{ad_id}"
     params = {
         "fields": "name,adset{id,name},campaign{id,name,objective}",
@@ -109,36 +118,80 @@ async def enriquecer_ad_source(conversation_id: str) -> None:
             r = await client.get(url, params=params)
         if r.status_code >= 300:
             logger.warning("Meta enrich %s: %s", r.status_code, r.text[:200])
-            ad_source["enrich_error"] = f"{r.status_code}"
-        else:
-            ad = r.json()
-            ad_source["ad_name"] = ad.get("name")
-            ad_source["adset_id"] = (ad.get("adset") or {}).get("id")
-            ad_source["adset_name"] = (ad.get("adset") or {}).get("name")
-            ad_source["campaign_id"] = (ad.get("campaign") or {}).get("id")
-            ad_source["campaign_name"] = (ad.get("campaign") or {}).get("name")
-            ad_source["campaign_objective"] = (ad.get("campaign") or {}).get("objective")
+            return False
+        ad = r.json()
+        ad_source["ad_name"] = ad.get("name")
+        ad_source["adset_id"] = (ad.get("adset") or {}).get("id")
+        ad_source["adset_name"] = (ad.get("adset") or {}).get("name")
+        ad_source["campaign_id"] = (ad.get("campaign") or {}).get("id")
+        ad_source["campaign_name"] = (ad.get("campaign") or {}).get("name")
+        ad_source["campaign_objective"] = (ad.get("campaign") or {}).get("objective")
+        ad_source["enrich_source"] = "meta"
+        return True
     except (httpx.HTTPError, ValueError) as e:
         logger.warning("Meta enrich error: %s", e)
-        ad_source["enrich_error"] = str(e)
+        return False
+
+
+async def enriquecer_ad_source(conversation_id: str) -> None:
+    """
+    Añade nombre de anuncio/campaña. Intenta primero Zernio (solo ZERNIO_API_KEY) y,
+    si no resuelve, Meta Graph (si hay META_ACCESS_TOKEN). Equivalente a enrichAdSource()
+    de simplemas-suite.
+    """
+    if not ENABLE_ADS:
+        return
+    conv = await memory.obtener_conversacion(conversation_id)
+    ad_source = memory.leer_ad_source(conv)
+    if not ad_source or ad_source.get("enriched_at"):
+        return
+    ad_id = ad_source.get("ctwa_source_id")
+    if not ad_id:
+        return
+
+    ok = await _enriquecer_via_zernio(ad_source, ad_id)
+    if not ok:
+        ok = await _enriquecer_via_meta(ad_source, ad_id)
+    if not ok:
+        ad_source["enrich_error"] = "no se pudo resolver el anuncio (revisa que tu cuenta de Meta Ads esté conectada a Zernio)"
 
     ad_source["enriched_at"] = _ahora_iso()
     await memory.guardar_ad_source(conversation_id, ad_source)
 
 
 # ── 3. ROAS ───────────────────────────────────────────────────
-async def _gasto_por_anuncio(ad_account_id: str, dias: int) -> dict[str, float]:
-    """Gasto por anuncio desde Meta Insights. {} si no hay token o ad_account."""
-    if not META_ACCESS_TOKEN or not ad_account_id:
-        return {}
-    # time_range acepta cualquier rango (date_preset solo admite valores fijos como last_30d).
+def _rango_fechas(dias: int) -> tuple[str, str]:
     hasta = datetime.now(timezone.utc).date()
     desde = hasta - timedelta(days=dias)
+    return desde.isoformat(), hasta.isoformat()
+
+
+async def _gasto_via_zernio(ad_ids: set[str], dias: int) -> dict[str, float]:
+    """Gasto por anuncio desde la Ads API de Zernio (un get_ad_analytics por anuncio)."""
+    desde, hasta = _rango_fechas(dias)
+    gasto: dict[str, float] = {}
+    for ad_id in ad_ids:
+        data = await zernio.get_ad_analytics(ad_id, desde, hasta)
+        if not data:
+            continue
+        # La métrica puede venir en summary.spend o en el objeto raíz.
+        resumen = data.get("summary") or data
+        spend = resumen.get("spend") if isinstance(resumen, dict) else None
+        if spend is not None:
+            gasto[ad_id] = float(spend or 0.0)
+    return gasto
+
+
+async def _gasto_via_meta(ad_account_id: str, dias: int) -> dict[str, float]:
+    """Respaldo: gasto por anuncio desde Meta Insights. {} si no hay token o ad_account."""
+    if not META_ACCESS_TOKEN or not ad_account_id:
+        return {}
+    desde, hasta = _rango_fechas(dias)
     url = f"{META_GRAPH_BASE}/{ad_account_id}/insights"
     params = {
         "level": "ad",
         "fields": "ad_id,spend",
-        "time_range": json.dumps({"since": desde.isoformat(), "until": hasta.isoformat()}),
+        "time_range": json.dumps({"since": desde, "until": hasta}),
         "limit": "500",
         "access_token": META_ACCESS_TOKEN,
     }
@@ -160,15 +213,19 @@ async def _gasto_por_anuncio(ad_account_id: str, dias: int) -> dict[str, float]:
 
 async def reporte_roas(ad_account_id: str | None = None, dias: int = 30) -> dict:
     """
-    Reporte simple de ROAS por anuncio:
-        ingresos (ventas registradas en SQLite) ÷ gasto (Meta Insights).
-    Si no hay token/ad_account, devuelve solo ingresos por anuncio.
+    Reporte de ROAS por anuncio: ingresos (ventas en SQLite) ÷ gasto.
+    El gasto sale de Zernio (solo ZERNIO_API_KEY); si Zernio no devuelve nada y hay
+    META_ACCESS_TOKEN + ad_account_id, usa Meta Insights como respaldo.
     """
     ingresos = await memory.ingresos_por_anuncio(dias)
-    gasto = await _gasto_por_anuncio(ad_account_id or "", dias) if ad_account_id else {}
+    ad_ids = set(ingresos)
+
+    gasto = await _gasto_via_zernio(ad_ids, dias) if ad_ids else {}
+    if not gasto and ad_account_id:
+        gasto = await _gasto_via_meta(ad_account_id, dias)
 
     anuncios = []
-    for ad_id in sorted(set(ingresos) | set(gasto)):
+    for ad_id in sorted(ad_ids | set(gasto)):
         rev = round(ingresos.get(ad_id, 0.0), 2)
         spend = round(gasto.get(ad_id, 0.0), 2)
         roas = round(rev / spend, 2) if spend > 0 else None

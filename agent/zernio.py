@@ -165,6 +165,49 @@ async def enviar_conversion(
         return False
 
 
+# ── Lectura de anuncios (para enriquecer + ROAS, sin token de Meta) ──
+async def get_ad(ad_id: str) -> dict | None:
+    """
+    GET /v1/ads/{adId} — detalles de un anuncio. {adId} acepta el ID numérico de
+    Meta (el mismo `ctwa_source_id` que capturamos). Devuelve nombre, estado y
+    `metrics.spend`. None si no se encuentra o no hay API key.
+    """
+    if not ZERNIO_API_KEY or not ad_id:
+        return None
+    url = f"{ZERNIO_BASE_URL}/ads/{ad_id}"
+    try:
+        async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+            r = await client.get(url, headers=_headers())
+        if r.status_code >= 300:
+            logger.warning("Zernio get_ad %s: %s", r.status_code, r.text[:200])
+            return None
+        return r.json()
+    except (httpx.HTTPError, ValueError) as e:
+        logger.warning("Zernio get_ad error: %s", e)
+        return None
+
+
+async def get_ad_analytics(ad_id: str, from_date: str, to_date: str) -> dict | None:
+    """
+    GET /v1/ads/{adId}/analytics?fromDate&toDate — métricas (incluye `spend`) en
+    un rango de fechas (YYYY-MM-DD). None si falla.
+    """
+    if not ZERNIO_API_KEY or not ad_id:
+        return None
+    url = f"{ZERNIO_BASE_URL}/ads/{ad_id}/analytics"
+    params = {"fromDate": from_date, "toDate": to_date}
+    try:
+        async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+            r = await client.get(url, params=params, headers=_headers())
+        if r.status_code >= 300:
+            logger.warning("Zernio get_ad_analytics %s: %s", r.status_code, r.text[:200])
+            return None
+        return r.json()
+    except (httpx.HTTPError, ValueError) as e:
+        logger.warning("Zernio get_ad_analytics error: %s", e)
+        return None
+
+
 # ── CLI: provisionar el dataset CTWA por número (para anuncios/ROAS) ──
 # Uso: python -m agent.zernio provision <account_id> [<account_id> ...]
 if __name__ == "__main__":
