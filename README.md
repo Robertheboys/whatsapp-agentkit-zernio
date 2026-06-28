@@ -32,14 +32,28 @@ queda listo. No necesitas saber programar.
 
 ## Inicio rápido (con agente)
 
+La forma más simple: clona, abre tu agente de terminal favorito y dile que configure el repo.
+
 ```bash
 git clone <tu-fork-de-este-repo>.git
-cd "AGENTE WHATSAP KIT"
-bash start.sh        # verifica entorno y crea .env
+cd whatsapp-agentkit-zernio
+```
 
-claude               # abre Claude Code
+**Con Claude Code** (lo más directo):
+```bash
+claude
 /setup-agente        # te entrevista y deja todo listo
 ```
+
+**Con Gemini CLI, Codex CLI, Cursor u otro agente de terminal:** ábrelo en la carpeta y escríbele:
+
+> *"Configura este repositorio para mí."*
+
+El agente leerá las instrucciones de onboarding (`CLAUDE.md` / `AGENTS.md` / `GEMINI.md`, según el
+agente) y te guiará paso a paso. Todos apuntan al mismo proceso.
+
+> ⚠️ Esto funciona con **agentes de terminal** (que pueden ejecutar comandos en tu PC).
+> **ChatGPT o Gemini web** no pueden configurarlo por ti: solo te dan los pasos para hacerlo a mano.
 
 ## Inicio rápido (manual)
 
