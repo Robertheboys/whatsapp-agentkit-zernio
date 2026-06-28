@@ -1,7 +1,7 @@
 services:
   agente:
     build: .
-    container_name: agente-whatsapp
+    container_name: whatsapp-agentreply
     ports:
       - "${PORT:-8000}:8000"
     env_file:

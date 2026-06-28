@@ -35,7 +35,7 @@ MAX_TOKENS = int(os.getenv("MAX_TOKENS", "1024"))
 # Encabezados opcionales que OpenRouter usa para rankings/atribución.
 _EXTRA_HEADERS = {
     "HTTP-Referer": os.getenv("OPENROUTER_SITE_URL", "https://github.com/"),
-    "X-Title": os.getenv("OPENROUTER_APP_NAME", "AgentKit WhatsApp"),
+    "X-Title": os.getenv("OPENROUTER_APP_NAME", "WhatsApp Agentreply"),
 }
 
 # Cliente perezoso: se crea al primer uso (permite importar sin la key en tests).

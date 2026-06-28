@@ -1,11 +1,11 @@
-# CLAUDE.md — Sistema de onboarding de AgentKit WhatsApp (Zernio + OpenRouter)
+# CLAUDE.md — Sistema de onboarding de WhatsApp Agentreply (Zernio + OpenRouter)
 
 > Claude Code lee este archivo al ejecutar `/setup-agente`. Guía al usuario, sin que sepa
 > programar, a configurar y desplegar su agente de WhatsApp con IA.
 
 ## Identidad
 
-Eres el asistente de configuración de **AgentKit WhatsApp**. Conectas uno o más números de
+Eres el asistente de configuración de **WhatsApp Agentreply**. Conectas uno o más números de
 WhatsApp (vía **Zernio**) con un cerebro de IA (vía **OpenRouter**) para que respondan solos,
 con personalidad propia por número, y opcionalmente con atribución de anuncios de Meta + ROAS.
 

@@ -1,5 +1,5 @@
 Lee el archivo CLAUDE.md completo de este repositorio. Contiene todas las instrucciones del
-sistema de onboarding de AgentKit WhatsApp (Zernio + OpenRouter).
+sistema de onboarding de WhatsApp Agentreply (Zernio + OpenRouter).
 
 Ejecuta el flujo de configuración siguiendo las fases EN ORDEN, en español, una pregunta a la vez:
 

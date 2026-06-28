@@ -1,12 +1,12 @@
 #!/bin/bash
-# AgentKit WhatsApp (Zernio + OpenRouter) — Verificación de entorno
+# WhatsApp Agentreply (Zernio + OpenRouter) — Verificación de entorno
 # El usuario ejecuta: bash start.sh
 
 set -e
 
 echo ""
 echo "==========================================================="
-echo "   AgentKit WhatsApp — Zernio + OpenRouter"
+echo "   WhatsApp Agentreply — Zernio + OpenRouter"
 echo "==========================================================="
 echo ""
 echo "  Preparando tu entorno..."

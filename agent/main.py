@@ -56,7 +56,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="AgentKit WhatsApp (Zernio + OpenRouter)", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="WhatsApp Agentreply (Zernio + OpenRouter)", version="1.0.0", lifespan=lifespan)
 
 
 # ── Salud ─────────────────────────────────────────────────────

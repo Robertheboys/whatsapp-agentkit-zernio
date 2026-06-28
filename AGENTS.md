@@ -1,4 +1,4 @@
-# AgentKit WhatsApp — instrucciones para agentes de IA
+# WhatsApp Agentreply — instrucciones para agentes de IA
 
 > Este archivo lo leen los agentes de terminal que usan el estándar `AGENTS.md`
 > (OpenAI Codex CLI, Cursor, y otros). La fuente canónica del onboarding es `CLAUDE.md`.

@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="docs/banner.png" alt="AgentKit WhatsApp — Zernio + OpenRouter" width="100%">
+  <img src="docs/banner.png" alt="WhatsApp Agentreply — Zernio + OpenRouter" width="100%">
 </p>
 
-# AgentKit WhatsApp — Zernio + OpenRouter
+# WhatsApp Agentreply — Zernio + OpenRouter
 
 Conecta uno o más números de **WhatsApp** (vía [Zernio](https://zernio.com)) con un cerebro de
 **IA** (vía [OpenRouter](https://openrouter.ai)) para que **respondan solos**, con personalidad
@@ -21,8 +21,8 @@ queda listo. No necesitas saber programar.
 
 ```bash
 # 1. Clona el repo
-git clone https://github.com/Robertheboys/whatsapp-agentkit-zernio.git
-cd whatsapp-agentkit-zernio
+git clone https://github.com/Robertheboys/whatsapp-agentreply.git
+cd whatsapp-agentreply
 ```
 
 ```bash
@@ -58,7 +58,7 @@ La forma más simple: clona, abre tu agente de terminal favorito y dile que conf
 
 ```bash
 git clone <tu-fork-de-este-repo>.git
-cd whatsapp-agentkit-zernio
+cd whatsapp-agentreply
 ```
 
 **Con Claude Code** (lo más directo):

@@ -1,4 +1,4 @@
-# AgentKit WhatsApp — instrucciones para Gemini CLI
+# WhatsApp Agentreply — instrucciones para Gemini CLI
 
 > Gemini CLI lee este archivo (`GEMINI.md`) como contexto. La fuente canónica del onboarding
 > es `CLAUDE.md`; sigue ese proceso.

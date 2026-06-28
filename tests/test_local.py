@@ -30,7 +30,7 @@ async def main() -> None:
 
     lista = list(negocios.values())
     print("\n" + "=" * 55)
-    print("   AgentKit WhatsApp — Test Local")
+    print("   WhatsApp Agentreply — Test Local")
     print("=" * 55)
     for i, n in enumerate(lista, 1):
         print(f"   {i}. {n.nombre}  (agente: {n.agente}, modelo: {n.modelo})")
